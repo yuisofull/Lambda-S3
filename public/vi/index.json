@@ -1,0 +1,106 @@
+[
+{
+	"uri": "//localhost:1313/vi/",
+	"title": "Upload file to S3 with Lambda(Golang)",
+	"tags": [],
+	"description": "",
+	"content": "Đăng file lên AWS S3 với AWS Lambda(Golang) Tổng quan Trong bài lab này, bạn sẽ sử dụng AWS Lambda để đăng file lên S3 thông qua POST request từ API Gateway vơi Golang\nNội dung Giới thiệu Các bước chuẩn bị Upload file References Dọn dẹp tài nguyên "
+},
+{
+	"uri": "//localhost:1313/vi/2-prerequiste/2.1-createbucket/",
+	"title": "Chuẩn bị Bucket S3",
+	"tags": [],
+	"description": "",
+	"content": "Trong bước này, chúng ta sẽ cần tạo một 1 bucket công khai tài nguyên bucket với user bên ngoài.\nNội dung Tạo bucket Cấu hình bucket "
+},
+{
+	"uri": "//localhost:1313/vi/2-prerequiste/2.2-createlambda/",
+	"title": "Chuẩn bị Lambda Function",
+	"tags": [],
+	"description": "",
+	"content": "In this step, we will need to create a Lambda Function to handle user files and place them in the Bucket.\nContents Create Lambda Function Code Lambda Function with Go "
+},
+{
+	"uri": "//localhost:1313/vi/1-introduce/",
+	"title": "Giới thiệu",
+	"tags": [],
+	"description": "",
+	"content": "Serverless Serverless là mô hình phát triển ứng dụng trên cloud mà cho phép ta xây dựng và chạy applications của chúng ta một cách dễ dàng, mà không cần quản lý server gì hết.\nĐây là 4 lợi ích mình thấy của mô hình Serverless:\nGiảm chi phí của việc quản lý và vận hành server, đây là công việc thường xuyên của DevOps, ta có thể giảm số lượng công việc mà DevOps cần phải làm. Như tạo, quản lý và monitor EC2. Tự động scale và high-availability: FaaS của chúng ta sẽ tự động scale theo traffic, ta không cần cấu hình gì nhiều, trừ khi ta muốn nó scale theo một cách cụ thế nào đó. Tối ưu tiền sử dụng cloud: đối với cloud vần đề quan trọng nhất là tiền hàng tháng, khi ta xài FaaS thì ta sẽ chỉ cần trả tiền cho từng function được trigger. Hỗ trợ nhiều ngôn ngữ khác nhau: ta có thể dùng nhiều ngôn ngữ khác nhau để viết FaaS. AWS Lambda Lambda là một dịch vụ serverless compute cho phép bạn chạy ứng dụng mà không cần khởi tạo hoặc quản lý máy chủ. Lambda chạy trên nển tảng hạ tầng có tính khả dụng cao và thực hiện tất cả việc quản lý tài nguyên tính toán, bao gồm bảo trì máy chủ và hệ điều hành, cung cấp dung lượng, tự động mở rộng quy mô và ghi log. Với Lambda, bạn có thể phát triển hầu hết mọi loại ứng dụng hoặc dịch vụ phụ trợ.\nBạn tổ chức ứng dụng của mình thành các Lambda function. Lambda function chỉ chạy khi cần thiết và có khả năng tự động mở rộng quy mô, từ một vài yêu cầu mỗi ngày đến hàng nghìn mỗi giây. Bạn chỉ phải trả cho thời gian tính toán mà bạn sử dụng — AWS sẽ không tính phí khi ứng dụng của bạn không chạy.\nTrong bài thực hành này chúng ta sẽ giúp người dùng đănG file bucket với POST request sử dụng Gateway API và Lambda Function\n"
+},
+{
+	"uri": "//localhost:1313/vi/2-prerequiste/2.1-createbucket/2.1.1-createbucket/",
+	"title": "Tạo Bucket ",
+	"tags": [],
+	"description": "",
+	"content": "Tạo Bucket Truy cập giao diện quản trị dịch vụ S3 Click Create Bucket. Tại trang Create Bucket. Tại mục AWS Region chọn ap-south-east-1 Tại mục Bucket name điền bucket-for-lambda + id bạn muốn (mình để bucket-for-lambda-55555). Tại mục Block Public Access settings for this bucket các bạn uncheck Các mục còn lại để mặc định. Click Create Bucket. "
+},
+{
+	"uri": "//localhost:1313/vi/2-prerequiste/2.2-createlambda/2.2.1-createlambda/",
+	"title": "Tạo Lambda Function",
+	"tags": [],
+	"description": "",
+	"content": "Tạo Lambda Function Truy cập giao diện quản trị dịch vụ Lambda Click Create a function. Tại trang Create function. Tại mục Function name điền s3-upload Tại mục Runtime điền bucket-for-lambda chọn Amazon Linux 2023 Tại mục Architecture chọn arm64 Click Create Function Sau khi tạo thành công, chọn mục Configuration Click vào role Tại trang IAM Chọn Add permissions Chọn Attach policies Để thuận tiện, kiếm và chọn AmazonS3FullAccess. Trong production chúng ta sẽ cấu hình quyền chi tiết hơn Click Add permissions "
+},
+{
+	"uri": "//localhost:1313/vi/2-prerequiste/",
+	"title": "Các bước chuẩn bị",
+	"tags": [],
+	"description": "",
+	"content": "Bạn cần tạo 1 S3 Bucket, 1 Lambda Function và 1 API Gateway để thực hiệN bài lab này. Để Lambda Function tương tác được với S3, ta cũng sẽ cần cấp quyền cho Lambda Function này.\nNội dung Tạo Bucket Tạo Lambda Function Tạo API Gateway "
+},
+{
+	"uri": "//localhost:1313/vi/2-prerequiste/2.1-createbucket/2.1.2-makebucketpublic/",
+	"title": "Làm Bucket Public",
+	"tags": [],
+	"description": "",
+	"content": "Cấu hình bucket Click Bucket bạn vừa tạo. Click Properties. Tại trang Properties. Tại mục Static website hosting click chọn Edit. Chuyển Static website hosting sang chế độ Enable Điền vào ô index document là index.html Click Save changes Tại trang Permissions. Tại mục Bucket policy chọn Edit. Ta dán đoạn này vào : { \u0026#34;Version\u0026#34;: \u0026#34;2012-10-17\u0026#34;, \u0026#34;Statement\u0026#34;: [ { \u0026#34;Sid\u0026#34;: \u0026#34;PublicReadGetObject\u0026#34;, \u0026#34;Effect\u0026#34;: \u0026#34;Allow\u0026#34;, \u0026#34;Principal\u0026#34;: \u0026#34;*\u0026#34;, \u0026#34;Action\u0026#34;: \u0026#34;s3:GetObject\u0026#34;, \u0026#34;Resource\u0026#34;: \u0026#34;arn:aws:s3:::{tên-bucket}/*\u0026#34; } ] } Thay tên bucket vào {tên-bucket}\nClick Save Changes "
+},
+{
+	"uri": "//localhost:1313/vi/2-prerequiste/2.2-createlambda/2.2.2-createcode/",
+	"title": "Tạo Code",
+	"tags": [],
+	"description": "",
+	"content": "\rBạn cần cài đặt sẵn Golang compiler trên máy để thực hiện phần này\nViết code Golang cho Lambda Function Tạo 1 thư mục tên s3-upload Mở terminal ở thư mục hiện tại ghi go mod init s3-upload Vô trong thư mục tạo file main.go Nhập đoạn code sau file main.go package main import ( \u0026#34;bytes\u0026#34; \u0026#34;context\u0026#34; \u0026#34;encoding/json\u0026#34; \u0026#34;fmt\u0026#34; \u0026#34;github.com/aws/aws-lambda-go/events\u0026#34; \u0026#34;github.com/aws/aws-lambda-go/lambda\u0026#34; \u0026#34;github.com/aws/aws-sdk-go-v2/aws\u0026#34; \u0026#34;github.com/aws/aws-sdk-go-v2/config\u0026#34; \u0026#34;github.com/aws/aws-sdk-go-v2/service/s3\u0026#34; \u0026#34;github.com/grokify/go-awslambda\u0026#34; \u0026#34;io\u0026#34; \u0026#34;net/http\u0026#34; \u0026#34;path/filepath\u0026#34; \u0026#34;strings\u0026#34; \u0026#34;time\u0026#34; ) var ( bucketName = \u0026#34;bucket-for-lambda-55555\u0026#34; //change to your bucket name region = \u0026#34;ap-southeast-1\u0026#34; ) type customStruct struct { Content string `json:\u0026#34;content,omitempty\u0026#34;` FileName string `json:\u0026#34;fileName,omitempty\u0026#34;` FileExtension string `json:\u0026#34;fileExtension,omitempty\u0026#34;` Link string `json:\u0026#34;link,omitempty\u0026#34;` } func GetFileFromAPIGatewayProxyRequest(req events.APIGatewayProxyRequest) ([]byte, string, error) { r, err := awslambda.NewReaderMultipart(req) if err != nil { return []byte{}, \u0026#34;\u0026#34;, err } part, err := r.NextPart() if err != nil { return []byte{}, \u0026#34;\u0026#34;, err } content, err := io.ReadAll(part) if err != nil { return []byte{}, \u0026#34;\u0026#34;, err } return content, part.FileName(), nil } func fileNameWithoutExtSliceNotation(fileName string) string { return fileName[:len(fileName)-len(filepath.Ext(fileName))] } func Upload(request events.APIGatewayProxyRequest, cfg aws.Config) (image string, err error) { content, fileName, err := GetFileFromAPIGatewayProxyRequest(request) if err != nil { return } client := s3.NewFromConfig(cfg) fileExt := filepath.Ext(fileName) fileName = fmt.Sprintf(\u0026#34;%s-%v%s\u0026#34;, fileNameWithoutExtSliceNotation(fileName), time.Now().UnixNano(), fileExt) fileName = strings.Replace(fileName, \u0026#34; \u0026#34;, \u0026#34;-\u0026#34;, -1) data := \u0026amp;s3.PutObjectInput{ Bucket: \u0026amp;bucketName, Key: \u0026amp;fileName, Body: bytes.NewReader(content), } _, err = client.PutObject(context.TODO(), data) if err != nil { return } image = fmt.Sprintf(\u0026#34;https://%s.s3.%s.amazonaws.com/%s\u0026#34;, bucketName, region, fileName) return } func create(req events.APIGatewayProxyRequest) (res events.APIGatewayProxyResponse, err error) { cfg, err := config.LoadDefaultConfig(context.TODO()) if err != nil { return events.APIGatewayProxyResponse{ StatusCode: http.StatusInternalServerError, Headers: map[string]string{ \u0026#34;Content-Type\u0026#34;: \u0026#34;application/json\u0026#34;, \u0026#34;Access-Control-Allow-Origin\u0026#34;: \u0026#34;*\u0026#34;, }, Body: \u0026#34;Error while retrieving AWS credentials\u0026#34;, }, nil } image, err := Upload(req, cfg) if err != nil { return events.APIGatewayProxyResponse{ StatusCode: http.StatusInternalServerError, Headers: map[string]string{ \u0026#34;Content-Type\u0026#34;: \u0026#34;application/json\u0026#34;, \u0026#34;Access-Control-Allow-Origin\u0026#34;: \u0026#34;*\u0026#34;, }, Body: err.Error(), }, nil } custom := customStruct{ Link: image, } customBytes, err := json.Marshal(custom) if err != nil { return res, err } return events.APIGatewayProxyResponse{ StatusCode: 200, Headers: map[string]string{ \u0026#34;Content-Type\u0026#34;: \u0026#34;application/json\u0026#34;, \u0026#34;Access-Control-Allow-Origin\u0026#34;: \u0026#34;*\u0026#34;, }, Body: string(customBytes), }, nil } func main() { lambda.Start(create) } Ở dòng 22 trong file main.go thay bucketName bằng tên bucket của bạn\nMở terminal lên và ghi go mod tidy. Nó sẽ giúp bạn download các package chưa có Build code Giờ ta sẽ tạo 1 file để build code\nWindows Tạo file build.bat tại thư mục có file main.go Điền đoạn code này vô file đó:\nset GOOS=linux\rset GOARCH=arm64\rgo build -tags lambda.norpc -o bootstrap main.go\rwinrar a -afzip myfunc.zip .\\bootstrap Linux Tạo file build.sh tại thư mục có file main.go Điền đoạn code này vô file đó:\n#!/bin/bash GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o bootstrap main.go zip myfunc.zip bootstrap Upload code lên Lambda Truy cập giao diện Truy cập giao diện quản trị dịch vụ Lambda Chọn Function s3-upload\nTại mục Code\nChọn Upload from Chọn .zip file Upload file myfunc.zip tại thư mục bạn vừa build code\nAWS CLI Hoặc nếu trên máy bạn đã có sẵn AWS CLI bạn có thể chạy: aws lambda update-function-code --function-name s3-upload --zip-file fileb://myfunc.zip "
+},
+{
+	"uri": "//localhost:1313/vi/2-prerequiste/2.3-createapigateway/",
+	"title": "Tạo API Gateway",
+	"tags": [],
+	"description": "",
+	"content": "Tạo API Gateway Trong bước này chúng ta sẽ tiến hành tạo REST API trên API Gateway để kích hoạt Lambda event và đẩy request tới Lambda event\nTruy cập vào giao diện quản trị dịch vụ API Gateway Kiếm mục REST API và chọn Build. Phần API name điền S3 Upload, còn lại để mặc định. Click Create API Tại mục Resources click Create resource. Trong mục Resource name, điền upload Click Create resource Click Create method. Tại trang Create method Mục Method type để POST Enable Lambda proxy intergration Mục Lambda function chọn s3-upload mình vừa tạo Click Create method Tại thanh bên trái chọn API settings Tại mục Binary media types* chọn Managae mdeia types Tại trang Manage binary media types Chọn Add binary media type và thêm: */* multipart/form-data Click Save changes Tại thanh bên trái chọn Resources Chọn Deploy API Ở mục Stage chọn *New stage* Mục Stage name để staging Click Deploy Sau đó bạn hãy copy lại Invoke URL và tới phần tiếp theo "
+},
+{
+	"uri": "//localhost:1313/vi/3-file_uploading/",
+	"title": "Upload file",
+	"tags": [],
+	"description": "",
+	"content": "Trong bước này, chúng ta sẽ thực hiện đăng hình ảnh lên S3 sử dụng curl hoặc Postman\nCurl Các bạn mở terminal và nhập:\ncurl -v --request POST \u0026#39;{Invoke URL ở phần trước}/upload\u0026#39; --form file=\u0026#39;@{Đường dẫn tới hình ảnh}\u0026#39; Ví dụ trường hợp của tôi sẽ là:\ncurl -v --request POST \u0026#39;https://4x87mid1b8.execute-api.ap-southeast-1.amazonaws.com/staging/upload\u0026#39; --form file=\u0026#39;@C:\\Users\\Admin\\ok.png\u0026#39; Nêu thành công sẽ trả về link ở cuối như thế này:\n{\u0026#34;link\u0026#34;:\u0026#34;https://lambda-test-12333.s3.ap-southeast-1.amazonaws.com/ok-1708837492785249474.png\u0026#34;}* Connection #0 to host 4x87mid1b8.execute-api.ap-southeast-1.amazonaws.com left intact Postman Phần body chọn form-data Thêm key là file Phần value chọn file bạn muốn Sau khi thành công, các bạn có thể thấy file mình vừa upload trên bucket\n"
+},
+{
+	"uri": "//localhost:1313/vi/4-references/",
+	"title": "References",
+	"tags": [],
+	"description": "",
+	"content": "1. Amazon S3 https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteAccessPermissionsReqd.html https://repost.aws/knowledge-center/api-gateway-upload-image-s3 2. Lambda https://viblo.asia/p/serverless-series-golang-bai-1-serverless-va-aws-lambda-gAm5y71XZdb https://000078.awsstudygroup.com/1-introduce/ 3. Code https://www.appsloveworld.com/go/49/lambda-multipart-file-upload-in-go https://github.com/myshenin/aws-lambda-multipart-parser https://github.com/awsdocs/aws-doc-sdk-examples/blob/main/gov2/s3/actions/bucket_basics.go https://github.com/aws/aws-lambda-go/blob/main/events/README_ApiGatewayEvent.md https://docs.aws.amazon.com/lambda/latest/dg/lambda-golang.html https://github.com/grokify/go-awslambda https://docs.aws.amazon.com/lambda/latest/dg/golang-package.html https://docs.aws.amazon.com/lambda/latest/dg/golang-handler.html "
+},
+{
+	"uri": "//localhost:1313/vi/5-cleanup/",
+	"title": "Dọn dẹp tài nguyên  ",
+	"tags": [],
+	"description": "",
+	"content": "Chúng ta sẽ tiến hành các bước sau để xóa các tài nguyên chúng ta đã tạo trong bài thực hành này.\nXóa S3 bucket Truy cập giao diện quản trị dịch vụ S3 Click chọn S3 bucket chúng ta đã tạo cho bài thực hành. ( Ví dụ : bucket-for-lambda-55555 ) Click Empty. Điền permanently delete, sau đó click Empty để tiến hành xóa object trong bucket. Click Exit. Sau khi xóa hết object trong bucket, click Delete Điền tên S3 bucket, sau đó click Delete bucket để tiến hành xóa S3 bucket. Xóa API Gateway Truy cập vào giao diện quản trị dịch vụ API Gateway Chọn S3 Upload Chọn Delete Tại ô confirm , điền confirm. Click Delete để tiến hành xóa API Gateway. Xóa Lambda Function Truy cập vào giao diện quản trị dịch vụ Lambda Click s3-upload. Click chọn Actions. Click Delete. Tại ô confirm, điền delete để xác nhận, click Delete để thực hiện xóa Lambda function và các tài nguyên liên quan. "
+},
+{
+	"uri": "//localhost:1313/vi/categories/",
+	"title": "Categories",
+	"tags": [],
+	"description": "",
+	"content": ""
+},
+{
+	"uri": "//localhost:1313/vi/tags/",
+	"title": "Tags",
+	"tags": [],
+	"description": "",
+	"content": ""
+}]

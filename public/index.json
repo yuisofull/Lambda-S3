@@ -1,0 +1,106 @@
+[
+{
+	"uri": "//localhost:1313/",
+	"title": "Upload file to S3 with Lambda(Golang)",
+	"tags": [],
+	"description": "",
+	"content": "Uploading a File to AWS S3 with AWS Lambda (Golang) Overview In this lab, you will use AWS Lambda to upload a file to S3 via a POST request from API Gateway using Golang.\nContents Introduction Prerequisites Upload file References Cleaning up resources "
+},
+{
+	"uri": "//localhost:1313/2-prerequiste/2.1-createbucket/2.1.1-createbucket/",
+	"title": "Create bucket",
+	"tags": [],
+	"description": "",
+	"content": "Create Bucket Access the S3 management console. Click Create Bucket. On the Create Bucket page: Under AWS Region, select ap-south-east-1. Under Bucket name, enter bucket-for-lambda followed by your preferred id (I used bucket-for-lambda-55555). Under Block Public Access settings for this bucket, uncheck the box. Leave the rest as default. Click Create Bucket. "
+},
+{
+	"uri": "//localhost:1313/2-prerequiste/2.2-createlambda/2.2.1-createlambda/",
+	"title": "Create Lambda Function ",
+	"tags": [],
+	"description": "",
+	"content": "Create Lambda Function Access the Lambda service management interface Click Create a function. On the Create function page: Under Function name, enter s3-upload. Under Runtime, select Amazon Linux 2023. Under Architecture, select arm64. Click Create Function. After successful creation, select Configuration. Click on role. On the IAM page: Select Add permissions. Select Attach policies. For convenience, search and select AmazonS3FullAccess. In production, we would configure more granular permissions. Click Add permissions. "
+},
+{
+	"uri": "//localhost:1313/1-introduce/",
+	"title": "Introduction",
+	"tags": [],
+	"description": "",
+	"content": "Serverless Serverless is a cloud development model that allows you to build and run your applications easily without managing any servers.\nHere are four benefits I see in the Serverless model:\nReducing the cost of managing and operating servers, which is often the responsibility of DevOps, and this workload can be reduced. For example, tasks like creating, managing, and monitoring EC2 instances. Automatic scaling and high availability: Our Functions as a Service (FaaS) will automatically scale with traffic, requiring minimal configuration unless we want it to scale in a specific way. Optimizing cloud resource usage: The most important issue with the cloud is the monthly cost, and when we use FaaS, we only need to pay for each triggered function. Supporting multiple languages: We can use various programming languages to write FaaS. AWS Lambda Lambda is a serverless compute service that allows you to run applications without provisioning or managing servers. Lambda runs on a highly available platform and manages all compute resources, including server and operating system maintenance, capacity provisioning, automatic scaling, and logging. With Lambda, you can develop almost any type of application or backend service.\nYou organize your application into Lambda functions. Lambda functions only run when needed and have the ability to automatically scale, from a few requests per day to thousands per second. You only pay for the compute time you consume - AWS does not charge when your application is not running.\nIn this hands-on exercise, we will help users upload files to a bucket using a POST request through API Gateway and Lambda Function.\n"
+},
+{
+	"uri": "//localhost:1313/2-prerequiste/2.2-createlambda/2.2.2-createcode/",
+	"title": "Create Code",
+	"tags": [],
+	"description": "",
+	"content": "\rYou need to have the Golang compiler installed on your machine to complete this part.\nWriting Golang code for Lambda Function Create a directory named s3-upload. Open a terminal in the current directory and run go mod init s3-upload. Inside the directory, create a file named main.go. Copy the following code into the main.go file: package main import ( \u0026#34;bytes\u0026#34; \u0026#34;context\u0026#34; \u0026#34;encoding/json\u0026#34; \u0026#34;fmt\u0026#34; \u0026#34;github.com/aws/aws-lambda-go/events\u0026#34; \u0026#34;github.com/aws/aws-lambda-go/lambda\u0026#34; \u0026#34;github.com/aws/aws-sdk-go-v2/aws\u0026#34; \u0026#34;github.com/aws/aws-sdk-go-v2/config\u0026#34; \u0026#34;github.com/aws/aws-sdk-go-v2/service/s3\u0026#34; \u0026#34;github.com/grokify/go-awslambda\u0026#34; \u0026#34;io\u0026#34; \u0026#34;net/http\u0026#34; \u0026#34;path/filepath\u0026#34; \u0026#34;strings\u0026#34; \u0026#34;time\u0026#34; ) var ( bucketName = \u0026#34;bucket-for-lambda-55555\u0026#34; //change to your bucket name region = \u0026#34;ap-southeast-1\u0026#34; ) type customStruct struct { Content string `json:\u0026#34;content,omitempty\u0026#34;` FileName string `json:\u0026#34;fileName,omitempty\u0026#34;` FileExtension string `json:\u0026#34;fileExtension,omitempty\u0026#34;` Link string `json:\u0026#34;link,omitempty\u0026#34;` } func GetFileFromAPIGatewayProxyRequest(req events.APIGatewayProxyRequest) ([]byte, string, error) { r, err := awslambda.NewReaderMultipart(req) if err != nil { return []byte{}, \u0026#34;\u0026#34;, err } part, err := r.NextPart() if err != nil { return []byte{}, \u0026#34;\u0026#34;, err } content, err := io.ReadAll(part) if err != nil { return []byte{}, \u0026#34;\u0026#34;, err } return content, part.FileName(), nil } func fileNameWithoutExtSliceNotation(fileName string) string { return fileName[:len(fileName)-len(filepath.Ext(fileName))] } func Upload(request events.APIGatewayProxyRequest, cfg aws.Config) (image string, err error) { content, fileName, err := GetFileFromAPIGatewayProxyRequest(request) if err != nil { return } client := s3.NewFromConfig(cfg) fileExt := filepath.Ext(fileName) fileName = fmt.Sprintf(\u0026#34;%s-%v%s\u0026#34;, fileNameWithoutExtSliceNotation(fileName), time.Now().UnixNano(), fileExt) fileName = strings.Replace(fileName, \u0026#34; \u0026#34;, \u0026#34;-\u0026#34;, -1) data := \u0026amp;s3.PutObjectInput{ Bucket: \u0026amp;bucketName, Key: \u0026amp;fileName, Body: bytes.NewReader(content), } _, err = client.PutObject(context.TODO(), data) if err != nil { return } image = fmt.Sprintf(\u0026#34;https://%s.s3.%s.amazonaws.com/%s\u0026#34;, bucketName, region, fileName) return } func create(req events.APIGatewayProxyRequest) (res events.APIGatewayProxyResponse, err error) { cfg, err := config.LoadDefaultConfig(context.TODO()) if err != nil { return events.APIGatewayProxyResponse{ StatusCode: http.StatusInternalServerError, Headers: map[string]string{ \u0026#34;Content-Type\u0026#34;: \u0026#34;application/json\u0026#34;, \u0026#34;Access-Control-Allow-Origin\u0026#34;: \u0026#34;*\u0026#34;, }, Body: \u0026#34;Error while retrieving AWS credentials\u0026#34;, }, nil } image, err := Upload(req, cfg) if err != nil { return events.APIGatewayProxyResponse{ StatusCode: http.StatusInternalServerError, Headers: map[string]string{ \u0026#34;Content-Type\u0026#34;: \u0026#34;application/json\u0026#34;, \u0026#34;Access-Control-Allow-Origin\u0026#34;: \u0026#34;*\u0026#34;, }, Body: err.Error(), }, nil } custom := customStruct{ Link: image, } customBytes, err := json.Marshal(custom) if err != nil { return res, err } return events.APIGatewayProxyResponse{ StatusCode: 200, Headers: map[string]string{ \u0026#34;Content-Type\u0026#34;: \u0026#34;application/json\u0026#34;, \u0026#34;Access-Control-Allow-Origin\u0026#34;: \u0026#34;*\u0026#34;, }, Body: string(customBytes), }, nil } func main() { lambda.Start(create) } At line 22 replace the placeholder values with your actual bucket name.\nOpen a terminal and run go mod tidy to download any missing packages. Build the code Now we will create a file to build the code.\nWindows Create a file named build.bat in the directory where main.go is located. Add the following code to the file:\nset GOOS=linux set GOARCH=arm64 go build -tags lambda.norpc -o bootstrap main.go winrar a -afzip myfunc.zip .\\bootstrap Linux Create a file named build.sh in the directory where main.go is located. Add the following code to the file:\n#!/bin/bash GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o bootstrap main.go zip myfunc.zip bootstrap Upload the code to Lambda Access the Lambda service management interface Select the s3-upload function. Under Code tab: Select Upload from. Choose .zip file. Upload the myfunc.zip file from the directory where you built the code. Using AWS CLI Alternatively, if you have the AWS CLI installed on your machine, you can run: aws lambda update-function-code --function-name s3-upload --zip-file fileb://myfunc.zip "
+},
+{
+	"uri": "//localhost:1313/2-prerequiste/2.1-createbucket/2.1.2-makebucketpublic/",
+	"title": "Make Bucket Public",
+	"tags": [],
+	"description": "",
+	"content": "Configure bucket Click on the bucket you just created. Click Properties. On the Properties page: Under Static website hosting, click Edit. Switch Static website hosting to Enable. Enter index.html in the index document box. Click Save changes. On the Permissions page: Under Bucket policy, click Edit. Paste the following policy: { \u0026#34;Version\u0026#34;: \u0026#34;2012-10-17\u0026#34;, \u0026#34;Statement\u0026#34;: [ { \u0026#34;Sid\u0026#34;: \u0026#34;PublicReadGetObject\u0026#34;, \u0026#34;Effect\u0026#34;: \u0026#34;Allow\u0026#34;, \u0026#34;Principal\u0026#34;: \u0026#34;*\u0026#34;, \u0026#34;Action\u0026#34;: \u0026#34;s3:GetObject\u0026#34;, \u0026#34;Resource\u0026#34;: \u0026#34;arn:aws:s3:::{bucket-name}/*\u0026#34; } ] } Change {bucket-name} to your bucket name\nClick Save Changes. "
+},
+{
+	"uri": "//localhost:1313/2-prerequiste/",
+	"title": "Preparation ",
+	"tags": [],
+	"description": "",
+	"content": "You need to create 1 S3 Bucket, 1 Lambda Function, and 1 API Gateway to carry out this lab exercise. To enable the Lambda Function to interact with S3, we will also need to grant appropriate permissions to this Lambda Function.\nContents Create Bucket Create Lambda Function Create API Gateway "
+},
+{
+	"uri": "//localhost:1313/2-prerequiste/2.1-createbucket/",
+	"title": "Preparation for bucket S3",
+	"tags": [],
+	"description": "",
+	"content": "In this step, we will need to create a public bucket resource accessible to external users.\nContents Create bucket Configure bucket "
+},
+{
+	"uri": "//localhost:1313/2-prerequiste/2.2-createlambda/",
+	"title": "Preparation for Lambda Function",
+	"tags": [],
+	"description": "",
+	"content": "You need to create 1 S3 Bucket, 1 Lambda Function, and 1 API Gateway to carry out this lab exercise. To enable the Lambda Function to interact with S3, we will also need to grant appropriate permissions to this Lambda Function.\nContents Create Bucket Create Lambda Function Create API Gateway "
+},
+{
+	"uri": "//localhost:1313/2-prerequiste/2.3-createapigateway/",
+	"title": "Create API Gateway",
+	"tags": [],
+	"description": "",
+	"content": "Create API Gateway In this step, we will proceed to create a REST API on API Gateway to trigger Lambda events and forward requests to Lambda events.\nAccess the API Gateway service management interface. Look for REST API and select Build. Under API name, enter S3 Upload, leave the rest as default. Click Create API. Click Create resource under the Resources section. In the Resource name field, enter upload. Click Create resource. Click Create method. On the Create method page: Set Method type to POST. Enable Lambda proxy integration. Under Lambda function, select the s3-upload function you created earlier. Click Create method. From the left sidebar, select API settings. Under Binary media types, choose Manage media types. On the Manage binary media types page: Select Add binary media type and add: */* multipart/form-data Click Save changes. From the left sidebar, select Resources. Choose Deploy API. Under Stage, select *New stage*. Set Stage name to staging. Click Deploy. Copy the Invoke URL and proceed to the next step. "
+},
+{
+	"uri": "//localhost:1313/3-file_uploading/",
+	"title": "Upload file",
+	"tags": [],
+	"description": "",
+	"content": "In this step, we will upload an image to S3 using curl or Postman Curl Open your terminal and enter:\ncurl -v --request POST \u0026#39;{Invoke URL from previous step}/upload\u0026#39; --form file=\u0026#39;@{Path to the image}\u0026#39; For example, in my case it would be:\ncurl -v --request POST \u0026#39;https://4x87mid1b8.execute-api.ap-southeast-1.amazonaws.com/staging/upload\u0026#39; --form file=\u0026#39;@C:\\Users\\Admin\\ok.png\u0026#39; If successful, it will return the link at the end like this:\n{\u0026#34;link\u0026#34;:\u0026#34;https://lambda-test-12333.s3.ap-southeast-1.amazonaws.com/ok-1708837492785249474.png\u0026#34;}* Connection #0 to host 4x87mid1b8.execute-api.ap-southeast-1.amazonaws.com left intact Postman In the body section, select form-data. Add key as file Select the file you want as the value After successful upload, you can see the uploaded file in your bucket.\n"
+},
+{
+	"uri": "//localhost:1313/4-references/",
+	"title": "References",
+	"tags": [],
+	"description": "",
+	"content": "1. Amazon S3 https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteAccessPermissionsReqd.html https://repost.aws/knowledge-center/api-gateway-upload-image-s3 2. Lambda https://viblo.asia/p/serverless-series-golang-bai-1-serverless-va-aws-lambda-gAm5y71XZdb https://000078.awsstudygroup.com/1-introduce/ 3. Code https://www.appsloveworld.com/go/49/lambda-multipart-file-upload-in-go https://github.com/myshenin/aws-lambda-multipart-parser https://github.com/awsdocs/aws-doc-sdk-examples/blob/main/gov2/s3/actions/bucket_basics.go https://github.com/aws/aws-lambda-go/blob/main/events/README_ApiGatewayEvent.md https://docs.aws.amazon.com/lambda/latest/dg/lambda-golang.html https://github.com/grokify/go-awslambda https://docs.aws.amazon.com/lambda/latest/dg/golang-package.html https://docs.aws.amazon.com/lambda/latest/dg/golang-handler.html "
+},
+{
+	"uri": "//localhost:1313/5-cleanup/",
+	"title": "Clean up resources",
+	"tags": [],
+	"description": "",
+	"content": "We will proceed with the following steps to delete the resources we created in this lab exercise. Delete S3 bucket Access the S3 management console\nSelect the S3 bucket we created for this lab. (For example: bucket-for-lambda-55555) Click Empty. Enter permanently delete, then click Empty to delete objects in the bucket. Click Exit. After deleting all objects in the bucket, click Delete.\nEnter the S3 bucket name, then click Delete bucket to delete the S3 bucket. Delete API Gateway Access the API Gateway service management interface Select S3 Upload. Click Delete. In the confirmation box, enter confirm. Click Delete to delete the API Gateway. Delete Lambda Function Access the Lambda service management interface Click s3-upload. Select Actions. Click Delete. In the confirmation box, enter delete to confirm, then click Delete to delete the Lambda function and related resources. "
+},
+{
+	"uri": "//localhost:1313/categories/",
+	"title": "Categories",
+	"tags": [],
+	"description": "",
+	"content": ""
+},
+{
+	"uri": "//localhost:1313/tags/",
+	"title": "Tags",
+	"tags": [],
+	"description": "",
+	"content": ""
+}]
