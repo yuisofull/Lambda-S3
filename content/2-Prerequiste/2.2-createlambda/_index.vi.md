@@ -6,8 +6,8 @@ chapter : false
 pre : " <b> 2.2 </b> "
 ---
 
-In this step, we will need to create a Lambda Function to handle user files and place them in the Bucket.
+Trong bước này, chúng ta sẽ cần tạo một 1 Lambda Function để xử lý file của người dùng và đưa vào Bucket
 
-### Contents
-  - [Create Lambda Function](2.2.1-createlambda/)
-  - [Code Lambda Function with Go](2.2.2-createcode/)
+### Nội dung
+  - [Tạo Lambda Function](2.2.1-createlambda/)
+  - [Code Lambda Function với Go](2.2.2-createcode/)
